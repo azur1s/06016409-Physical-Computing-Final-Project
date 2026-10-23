@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f8f2">
+<title>Baby Tree — เติบโตไปด้วยกัน</title>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
+/* ===== Friend's design (unminified, unchanged values) ===== */
+:root{--ink:#344b3c;--muted:#829080;--green:#58764c;--line:#e5e9de;--cream:#fafaf5}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:'Noto Sans Thai',sans-serif;font-size:14px}
+button,input,a{-webkit-tap-highlight-color:transparent}
+button,input{font:inherit}
+button,a,input{outline-offset:5px}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.6}
+a{color:inherit;text-decoration:none}
+.header{max-width:1120px;margin:auto;height:96px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line)}
+.brand{font:600 29px Outfit,sans-serif;letter-spacing:-1px}
+.brand-icon{display:inline-grid;place-items:center;width:37px;height:37px;background:#e7eedc;border-radius:13px;margin-right:10px}
+.brand-dot,footer>span{color:#9bad77}
+.header-note{font:13px Outfit,sans-serif;color:#96a08e;margin-left:auto;letter-spacing:.5px}
+.icon-btn{border:1px solid var(--line);background:white;border-radius:50%;height:40px;width:40px;margin-left:20px;position:relative;color:var(--green);font-size:22px}
+#bell-dot{position:absolute;right:7px;top:7px;width:6px;height:6px;border-radius:50%;background:#c89460;display:none}
+main{max-width:1040px;margin:auto}
+.intro{display:flex;justify-content:space-between;align-items:center;margin:42px 0 30px}
+.eyebrow{font:11px Outfit,sans-serif;letter-spacing:2.4px;color:#86927a}
+h1{font-size:28px;font-weight:600;letter-spacing:-.8px;margin:8px 0}
+h1 span{color:#c9a465;font-size:30px;margin-left:7px}
+p{color:var(--muted);margin:5px 0;font-size:13px}
+.demo-badge{background:#f0eddf;color:#96835b;font:500 10px Outfit,sans-serif;letter-spacing:1.2px;padding:9px 13px;border-radius:20px}
+.layout{display:grid;grid-template-columns:1.05fr 1fr;gap:28px}
+.plant-card{background:#edf2e5;border:1px solid #e4ebdb;border-radius:26px;text-align:center;overflow:hidden;padding:24px 26px 0;position:relative}
+.plant-top{display:flex;justify-content:space-between;align-items:center}
+.small-label{font:11px Outfit,sans-serif;letter-spacing:1.5px;color:#87947b}
+.online{font-size:10px;color:#668052;background:#f8faf2;padding:6px 10px;border-radius:20px}
+.plant-heading h2{font-size:24px;margin:22px 0 3px;font-weight:600}
+.plant-heading h2 span{font-size:18px;color:#93a97c}
+.plant-heading p{font-size:12px}
+.scene{height:300px;position:relative;display:grid;place-items:center}
+.plant{height:284px;width:290px;position:relative;margin-top:37px;filter:drop-shadow(0 8px 5px #6e825110)}
+.foliage{transform-origin:160px 195px;animation:sway 5s ease-in-out infinite}
+.orbit{border:1px solid #dfe7d4;border-radius:50%;position:absolute;width:250px;height:250px;top:42px}
+.orbit-two{width:310px;height:310px;top:12px;opacity:.55}
+.spark{position:absolute;color:#a8b78d;font-size:24px}
+.s1{left:28px;top:112px}.s2{right:44px;top:85px;font-size:16px}.s3{right:16px;bottom:35px}
+.speech{position:absolute;z-index:1;top:5px;padding:9px 15px;background:#fffffff0;box-shadow:0 4px 12px #526b3810;border-radius:14px;font-size:11px;color:#6f825f}
+.speech:after{content:'';position:absolute;bottom:-6px;left:48%;border-left:7px solid transparent;border-right:7px solid transparent;border-top:7px solid white}
+.mood{display:inline-block;background:#dce7cb;border:1px solid #d4e1c1;border-radius:20px;padding:6px 20px;font-size:13px;margin-top:17px}
+.mood-note{font-size:12px;margin:9px 0 23px}
+.plant-footer{border-top:1px solid #dce4d2;padding:17px 0;display:flex;justify-content:space-between;color:#8a967d;font-size:10px}
+.plant-footer span:last-child{font-family:Outfit,sans-serif}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.section-title h2,.card h2{font-weight:600;font-size:16px;margin:0}
+.section-title>span{font-size:10px;color:#97a08e}
+.care-column>.section-title{margin:3px 0 15px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.stat{background:white;border:1px solid var(--line);border-radius:20px;padding:20px;position:relative}
+.stat-icon{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;margin-bottom:12px;font-size:21px}
+.water-icon{background:#edf2f1;color:#79a8aa}
+.temp-icon{background:#faf1df;color:#c4a163}
+.stat-label{font-size:12px;color:#83907e}
+.number{font:500 39px Outfit,sans-serif;letter-spacing:-1px;margin:5px 0 12px}
+.number small{font-size:18px;color:#9ca493;margin-left:5px}
+.meter{background:#edf0e7;height:5px;border-radius:9px;margin-bottom:9px;overflow:hidden}
+.meter i{display:block;width:0;height:100%;background:#9eb582;transition:width .5s}
+.stat-caption{font-size:10px;color:#89957e}
+.card{background:white;border:1px solid var(--line);border-radius:20px;padding:22px}
+.watering{margin-top:16px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.round-icon{display:grid;place-items:center;border-radius:50%;background:#f1f4e9;color:#93a879;width:40px;height:40px;font-size:25px}
+.auto-row{display:flex;justify-content:space-between;align-items:center;margin:19px 0}
+.auto-row strong{font-weight:500;font-size:12px}
+.auto-row small{display:block;font-size:10px;color:var(--muted);margin-top:3px}
+.switch{border:0;background:#dfe3d8;width:39px;height:23px;border-radius:20px;padding:3px;flex-shrink:0}
+.switch i{display:block;width:17px;height:17px;background:white;border-radius:50%;box-shadow:0 1px 3px #0001;transition:transform .2s}
+.switch[aria-checked=true]{background:#688653}
+.switch[aria-checked=true] i{transform:translateX(16px)}
+.water-button{border:0;border-radius:12px;background:#5c784e;color:white;width:100%;padding:13px;box-shadow:0 4px 8px #56734416}
+.water-button:hover:not(:disabled){background:#49643d}
+.water-status{font-size:10px;color:#7e8d74;text-align:center;margin-top:10px}
+.safe-note{text-align:center;font-size:9px;color:#a0a58f;margin-top:3px}
+.notification{display:flex;gap:13px;align-items:center;background:#f1f3e9;padding:14px 18px;margin-top:15px;border-radius:14px;border:1px solid #e8ecdd}
+.notification>span{font-size:24px;color:#8f9e76}
+.notification strong{font-size:11px;font-weight:500}
+.notification p{font-size:10px;margin-top:2px}
+.notification.alert{background:#fff0df;border-color:#efdec6}
+.notification.alert strong{color:#aa7646}
+.lower-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:28px;margin-top:24px}
+.growth .section-title>span{font:9px Outfit,sans-serif;letter-spacing:1px}
+.growth-body{display:flex;gap:27px;align-items:center;margin-top:22px}
+.age{min-width:125px;border-right:1px solid var(--line);padding-right:22px}
+.age>span{font:500 43px Outfit,sans-serif}
+.age small{display:block;font-size:10px;color:#909b86}
+.growth label{display:block;font-size:11px;color:#929b87;margin-bottom:5px}
+input[type=date]{font-size:12px;border:0;color:#536749;max-width:160px;background:#f7f8f2;padding:7px;border-radius:6px}
+.growth-body p{font-size:10px;margin-top:8px}
+.history ul{padding:0;margin:13px 0 0;list-style:none;max-height:114px;overflow:auto}
+.history li{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f2eb;padding:9px 0;font-size:11px;gap:9px}
+.history li span{font-size:9px;color:#95a087}
+.demo-panel{border:1px dashed #cfd8c3;border-radius:20px;padding:24px;margin-top:26px;background:#f5f6ee}
+.tiny-tag{font:9px Outfit,sans-serif;color:#a39164;background:#eae8d9;border-radius:5px;padding:4px 6px;margin-left:5px}
+.demo-panel p{font-size:11px}
+.text-button{border:1px solid #dbe2d0;background:#fff9;border-radius:9px;padding:9px;color:#70825e;font-size:10px}
+.demo-bottom{display:flex;justify-content:space-between;gap:8px;align-items:center;border-top:1px solid #e4e8db;margin-top:20px;padding-top:15px;font-size:10px;color:#959e87}
+footer{text-align:center;font:600 23px Outfit,sans-serif;margin:39px 0 28px}
+footer p{font:10px 'Noto Sans Thai',sans-serif;margin-top:6px;color:#9da58f}
+.mobile-nav{display:none}
+.offline{color:#9a8d7b;background:#efece4}
+.scene.thirsty .foliage{transform:rotate(7deg)}
+.scene.dry .foliage{animation:none;transform:rotate(15deg);filter:saturate(.6)}
+@keyframes sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+
+/* ===== Additions for the live version ===== */
+.demo-badge.live{background:#e4eed9;color:#5c784e}
+.demo-badge.down{background:#f3e6dc;color:#a0714c}
+.pump-dots{display:flex;gap:6px;margin:14px 0 13px}
+.pump-dots i{flex:1;height:5px;border-radius:9px;background:#edf0e7}
+.pump-dots i.used{background:#ccb07c}
+.conn-grid{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:23px}
+.conn-grid label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px}
+.topic-row{display:flex;gap:8px}
+.topic-row input{flex:1;min-width:0;border:1px solid #e2e6d8;background:#fff;border-radius:10px;padding:9px 11px;color:var(--ink);font:12px Outfit,sans-serif}
+.conn-list{list-style:none;margin:0;padding:0;font-size:11px}
+.conn-list li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e4e8db}
+.conn-list b{font:500 11px Outfit,sans-serif;color:#648052}
+.conn-list b.bad{color:#a0714c}
+#log{margin:12px 0 0;max-height:120px;overflow:auto;font:10px/1.6 ui-monospace,Menlo,Consolas,monospace;color:#8a967d;white-space:pre-wrap}
+.lib-error{max-width:520px;margin:80px auto;padding:24px;background:#fff0df;border:1px solid #efdec6;border-radius:20px;color:#aa7646;text-align:center}
+
+@media(prefers-reduced-motion:reduce){*,html{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media(max-width:1150px){.header{margin:0 30px}main{margin:0 40px}}
+@media(max-width:700px){
+  .header{height:75px;margin:0 23px}.brand{font-size:25px}.header-note{display:none}.icon-btn{margin-left:auto}
+  .intro{margin:28px 0 23px;align-items:flex-start;gap:4px}.eyebrow{font-size:8px;letter-spacing:1.4px}
+  h1{font-size:21px;margin-top:9px}h1 span{font-size:22px;margin-left:0}.intro p{font-size:11px}
+  .demo-badge{font-size:7px;padding:7px 8px;white-space:nowrap;margin-top:2px}
+  main{margin:0 20px}.layout,.lower-grid{grid-template-columns:1fr;gap:24px}
+  .plant-card{padding:20px 22px 0}.scene{height:280px}.plant{height:270px}.plant-heading h2{margin-top:21px}.plant-footer{font-size:8px}
+  .care-column>.section-title{margin-top:4px}.stat{padding:18px}.card{padding:20px}.watering{margin-top:16px}
+  .auto-row small{font-size:11px}.safe-note{font-size:10px}.lower-grid{margin-top:24px;gap:17px}
+  .growth-body{justify-content:space-around;gap:15px}.age{min-width:100px}
+  .demo-panel{padding:19px;margin-top:20px}.demo-panel .section-title{align-items:flex-start}.demo-panel h2{font-size:14px}
+  .text-button{font-size:9px;white-space:nowrap}.conn-grid{grid-template-columns:1fr;gap:19px}
+  .demo-bottom{flex-direction:column;align-items:flex-start;font-size:10px}
+  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:5;background:#fffef8f5;backdrop-filter:blur(12px);border-top:1px solid #e6eadf;justify-content:space-around;padding:10px 10px max(10px,env(safe-area-inset-bottom))}
+  .mobile-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;color:#718563;font-size:23px;min-width:70px}
+  .mobile-nav span{font-size:10px}footer{margin-bottom:106px}.online{font-size:9px}
+}
+@media(max-width:360px){main{margin:0 14px}h1{font-size:18px}.demo-badge{letter-spacing:0}.plant-footer span:last-child{font-size:7px}}
+</style>
+</head>
+<body>
+<header class="header">
+  <a class="brand" href="#home"><span class="brand-icon">♧</span> baby tree<span class="brand-dot">.</span></a>
+  <span class="header-note">a little care, a little happiness</span>
+  <button class="icon-btn" id="bell" aria-label="ดูการแจ้งเตือน">♧<span id="bell-dot"></span></button>
+</header>
+
+<main id="home">
+  <div class="intro">
+    <div>
+      <div class="eyebrow">YOUR LITTLE GREEN COMPANION</div>
+      <h1>วันนี้น้องเป็นยังไงบ้าง <span>☀</span></h1>
+      <p>ความสุขเล็ก ๆ ที่เติบโตไปกับคุณ</p>
+    </div>
+    <span class="demo-badge" id="live-badge">● CONNECTING</span>
+  </div>
+
+  <div class="layout">
+    <section class="plant-card">
+      <div class="plant-top">
+        <span class="small-label">MY BABY TREE</span>
+        <span id="online" class="online offline">○ กำลังเชื่อมต่อ…</span>
+      </div>
+      <div class="plant-heading"><h2>น้องใบอ่อน <span>✿</span></h2><p>เพื่อนตัวน้อยประจำมุมโปรดของคุณ</p></div>
+      <div class="scene" id="scene">
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+        <span class="spark s1">✧</span><span class="spark s2">✦</span><span class="spark s3">✧</span>
+        <div class="speech" id="speech">รอข้อมูลจากบอร์ดอยู่นะ…</div>
+        <svg class="plant" viewBox="0 0 320 330" role="img" aria-label="น้องต้นไม้" id="plant-svg">
+          <defs>
+            <linearGradient id="leaf" x2="1" y2="1"><stop stop-color="#9cbb6e"/><stop offset="1" stop-color="#60864f"/></linearGradient>
+            <linearGradient id="pot" x2="1" y2="1"><stop stop-color="#f2d5aa"/><stop offset="1" stop-color="#dfb98d"/></linearGradient>
+          </defs>
+          <ellipse cx="160" cy="302" rx="94" ry="12" fill="#506843" opacity=".10"/>
+          <g class="foliage">
+            <path d="M160 209 Q151 133 175 76" fill="none" stroke="#698653" stroke-width="9" stroke-linecap="round"/>
+            <path d="M161 159 C100 166 72 123 83 88 C131 83 159 115 161 159Z" fill="url(#leaf)"/>
+            <path d="M165 126 C161 73 200 44 235 55 C241 94 213 125 165 126Z" fill="url(#leaf)"/>
+            <path d="M160 186 C177 135 222 123 248 141 C239 185 207 200 160 186Z" fill="#87a968"/>
+            <path d="M151 153 L99 105 M173 115 L219 70 M173 181 L232 151" stroke="#d0dcad" stroke-width="2" fill="none" opacity=".65"/>
+          </g>
+          <path d="M94 208 L106 281 Q109 299 129 300 H191 Q211 299 214 281 L226 208Z" fill="url(#pot)"/>
+          <rect x="86" y="193" width="148" height="28" rx="12" fill="#efd2aa"/>
+          <ellipse cx="160" cy="197" rx="61" ry="7" fill="#a27c57"/>
+          <path d="M160 199 L160 190" stroke="#698653" stroke-width="8"/>
+          <g id="face" stroke="#5b5640" stroke-width="4" stroke-linecap="round" fill="none"></g>
+          <ellipse cx="122" cy="260" rx="10" ry="5" fill="#d99b85" opacity=".6"/>
+          <ellipse cx="198" cy="260" rx="10" ry="5" fill="#d99b85" opacity=".6"/>
+        </svg>
+      </div>
+      <div class="mood" id="mood">…</div>
+      <p class="mood-note" id="mood-note">กำลังรอค่าความชื้นจากเซนเซอร์</p>
+      <div class="plant-footer"><span>เติบโตด้วยความใส่ใจ</span><span>made of little moments ♡</span></div>
+    </section>
+
+    <div class="care-column">
+      <div class="section-title"><h2>สุขภาพของน้อง</h2><span id="updated">ยังไม่มีข้อมูล</span></div>
+      <div class="stats">
+        <section class="stat">
+          <span class="stat-icon water-icon">♧</span>
+          <span class="stat-label">ความชื้นในดิน</span>
+          <div class="number"><span id="moisture-value">--</span><small>%</small></div>
+          <div class="meter"><i id="moisture-meter"></i></div>
+          <span id="moisture-description" class="stat-caption">รอข้อมูล</span>
+        </section>
+        <section class="stat">
+          <span class="stat-icon temp-icon">◷</span>
+          <span class="stat-label">ให้น้ำชั่วโมงนี้</span>
+          <div class="number"><span id="pumps-value">--</span><small id="pumps-max">/ 5</small></div>
+          <div class="pump-dots" id="pump-dots"></div>
+          <span class="stat-caption" id="pumps-description">จำกัดเพื่อความปลอดภัย</span>
+        </section>
+      </div>
+
+      <section class="watering card">
+        <div class="row"><div><h2>เติมความสดชื่น</h2><p>ดูแลน้องด้วยน้ำสักนิด</p></div><span class="round-icon">♧</span></div>
+        <div class="auto-row">
+          <div><strong>ดูแลอัตโนมัติ</strong><small>บอร์ดให้น้ำเองเมื่อความชื้นต่ำกว่า 30%</small></div>
+          <button id="auto-toggle" class="switch" role="switch" aria-checked="false" aria-label="เปิดปิดการให้น้ำอัตโนมัติ" disabled><i></i></button>
+        </div>
+        <button class="water-button" id="water-button" disabled>♧ &nbsp; ให้น้ำเลย</button>
+        <div class="water-status" id="water-status" aria-live="polite">กำลังเชื่อมต่อ…</div>
+        <p class="safe-note">ปั๊มทำงานครั้งละ 2 วินาที แล้วพักให้ดินซึมน้ำ</p>
+      </section>
+
+      <div id="notification" class="notification" role="status">
+        <span>♡</span>
+        <div><strong id="notification-title">กำลังเชื่อมต่อกับน้อง</strong><p id="notification-text">รอสักครู่นะ</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lower-grid">
+    <section class="card growth">
+      <div class="section-title"><h2>เติบโตไปด้วยกัน</h2><span>OUR JOURNEY</span></div>
+      <div class="growth-body">
+        <div class="age"><span id="age">0</span><small>วันที่มีกันและกัน</small></div>
+        <div><label for="planted">เริ่มปลูกเมื่อ</label><input id="planted" type="date" required><p>ทุกวันคือการเติบโตเล็ก ๆ 🌱</p></div>
+      </div>
+    </section>
+    <section class="card history" id="history">
+      <div class="section-title"><h2>บันทึกความใส่ใจ</h2><span>ล่าสุด</span></div>
+      <ul id="history-list"></ul>
+    </section>
+  </div>
+
+  <section class="demo-panel" id="connection">
+    <div class="section-title">
+      <div><h2>การเชื่อมต่อ <span class="tiny-tag">MQTT</span></h2><p>ข้อมูลสดจากบอร์ดผ่าน broker.hivemq.com</p></div>
+      <button id="refresh" class="text-button" disabled>↻ ขอข้อมูลใหม่</button>
+    </div>
+    <div class="conn-grid">
+      <div>
+        <label for="topic">Topic prefix <output>ต้องตรงกับโค้ด Arduino</output></label>
+        <div class="topic-row"><input id="topic" spellcheck="false" autocomplete="off"><button id="apply-topic" class="text-button">ใช้</button></div>
+        <pre id="log"></pre>
+      </div>
+      <ul class="conn-list">
+        <li>Broker <b id="c-broker">กำลังเชื่อมต่อ</b></li>
+        <li>บอร์ด <b id="c-board">ไม่ทราบ</b></li>
+        <li>สถานะบอร์ด <b id="c-state">--</b></li>
+        <li>ค่าดิบ (ADC) <b id="c-raw">--</b></li>
+        <li>ข้อมูลล่าสุด <b id="c-age">--</b></li>
+      </ul>
+    </div>
+    <div class="demo-bottom"><span>บอร์ดเป็นผู้ตัดสินใจรดน้ำอัตโนมัติ เว็บแค่ส่งคำสั่ง</span><span>ข้อมูลส่งทุก 5 วินาที</span></div>
+  </section>
+
+  <footer>baby tree<span>.</span><p>เลี้ยงต้นไม้ เติมความสุข ทีละวัน</p></footer>
+</main>
+
+<nav class="mobile-nav" aria-label="เมนูหลัก">
+  <a href="#home">♧<span>น้องต้นไม้</span></a>
+  <a href="#history">◷<span>บันทึก</span></a>
+  <a href="#connection">☷<span>เชื่อมต่อ</span></a>
+</nav>
+
+<script>
+(() => {
+  // ---------- Config ----------
+  const BROKER_URL = "wss://broker.hivemq.com:8884/mqtt";
+  const DEFAULT_PREFIX = "azur-plant-x7k2";   // must match the Arduino code
+  const MAX_PUMPS = 5;                        // must match MAX_PUMPS_PER_HOUR
+  const STALE_MS = 20000;                     // no status for 20 s = offline
+
+  const $ = id => document.getElementById(id);
+
+  if (typeof mqtt === "undefined") {
+    document.body.innerHTML = '<div class="lib-error">โหลดไลบรารี MQTT ไม่สำเร็จ<br>เปิดไฟล์นี้ใน Chrome/Firefox ที่ต่ออินเทอร์เน็ต ไม่ใช่หน้าพรีวิว</div>';
+    return;
+  }
+
+  // ---------- Storage helpers (from friend's code) ----------
+  const read = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+
+  // ---------- Moods (friend's text and faces) ----------
+  const moodFor = m => m < 15 ? 'dry' : m < 30 ? 'thirsty' : m < 55 ? 'normal' : 'happy';
+  const moods = {
+    happy:   ['✦ สดใส','วันนี้สดชื่นจัง ขอบคุณที่ดูแลนะ!','ดินชุ่มชื้นพอดี น้องกำลังมีความสุข','M128 248 Q134 240 140 248 M180 248 Q186 240 192 248 M147 258 Q160 275 173 258'],
+    normal:  ['◡ ปกติ','อยู่ด้วยกันแบบนี้ อบอุ่นจัง','น้องสบายดี แวะมาทักทายกันอีกนะ','M134 244 L134 250 M186 244 L186 250 M149 262 Q160 269 171 262'],
+    thirsty: ['◔ กระหายน้ำ','ขอน้ำสักนิดได้ไหมนะ?','ดินเริ่มแห้งแล้ว น้องอยากได้น้ำ','M130 244 L139 247 M181 247 L190 244 M134 250 L134 253 M186 250 L186 253 M151 269 Q160 261 169 269'],
+    dry:     ['﹏ ดินแห้งมาก','แง… ดินแห้งมาก ช่วยดูแลหน่อย','น้องต้องการน้ำแล้ว อย่าปล่อยให้รอนานนะ','M127 243 L140 249 L128 254 M193 243 L180 249 L192 254 M148 271 Q160 258 172 271'],
+  };
+  const stateText = { idle: 'พร้อม', pumping: 'กำลังให้น้ำ', soaking: 'รอดินซึมน้ำ', locked: 'ล็อก (ให้น้ำครบโควตา)' };
+
+  // ---------- State ----------
+  let prefix = read('baby-tree-prefix', DEFAULT_PREFIX);
+  if (typeof prefix !== 'string' || !prefix) prefix = DEFAULT_PREFIX;
+  let data = null;          // last status JSON from the board
+  let lastAt = 0;           // when we received it
+  let boardOnline = null;   // from the retained /online topic
+  let prevState = '';
+  let history = read('baby-tree-history', []);
+  if (!Array.isArray(history)) history = [];
+  history = history.filter(x => x && typeof x.text === 'string' && Number.isFinite(x.at)).slice(0, 20);
+
+  const topics = () => ({ status: `${prefix}/status`, cmd: `${prefix}/cmd`, online: `${prefix}/online` });
+
+  // ---------- Small UI helpers ----------
+  function log(msg) {
+    const t = new Date().toLocaleTimeString('th-TH', { hour12: false });
+    const el = $('log');
+    el.textContent = (`[${t}] ${msg}\n` + el.textContent).slice(0, 4000);
+  }
+  function renderHistory() {
+    const list = $('history-list'); list.replaceChildren();
+    if (!history.length) { const li = document.createElement('li'); li.textContent = 'ยังไม่มีการให้น้ำ ลองดูแลน้องครั้งแรกกัน'; list.append(li); return; }
+    for (const item of history.slice(0, 8)) {
+      const li = document.createElement('li'), time = document.createElement('span');
+      li.append(document.createTextNode(item.text));
+      time.textContent = new Date(item.at).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      li.append(time); list.append(li);
+    }
+  }
+  function addHistory(text) {
+    history.unshift({ text, at: Date.now() });
+    history = history.slice(0, 20);
+    save('baby-tree-history', history);
+    renderHistory();
+  }
+
+  // ---------- Render ----------
+  function isLive() {
+    return client.connected && boardOnline !== false && data && (Date.now() - lastAt) < STALE_MS;
+  }
+
+  function render() {
+    const live = isLive();
+    const brokerOk = client.connected;
+
+    // header badge
+    const badge = $('live-badge');
+    badge.textContent = live ? '● LIVE' : brokerOk ? '○ BOARD OFFLINE' : '○ CONNECTING';
+    badge.className = 'demo-badge ' + (live ? 'live' : 'down');
+
+    // online pill
+    $('online').textContent = live ? '● ออนไลน์' : brokerOk ? '○ บอร์ดออฟไลน์' : '○ กำลังเชื่อมต่อ…';
+    $('online').className = 'online' + (live ? '' : ' offline');
+
+    // connection panel
+    $('c-broker').textContent = brokerOk ? 'เชื่อมต่อแล้ว' : 'ไม่ได้เชื่อมต่อ';
+    $('c-broker').className = brokerOk ? '' : 'bad';
+    $('c-board').textContent = boardOnline === null ? 'ไม่ทราบ' : boardOnline ? 'ออนไลน์' : 'ออฟไลน์';
+    $('c-board').className = boardOnline === false ? 'bad' : '';
+    $('c-age').textContent = data ? Math.round((Date.now() - lastAt) / 1000) + ' วินาทีที่แล้ว' : '--';
+    $('refresh').disabled = !brokerOk;
+
+    if (!data) {
+      $('water-button').disabled = true;
+      $('auto-toggle').disabled = true;
+      $('water-status').textContent = brokerOk ? 'รอข้อมูลจากบอร์ด…' : 'กำลังเชื่อมต่อ…';
+      $('notification-title').textContent = brokerOk ? 'ยังไม่ได้ยินเสียงน้องเลย' : 'กำลังเชื่อมต่อกับน้อง';
+      $('notification-text').textContent = brokerOk ? 'เช็กว่าบอร์ดเปิดอยู่ และ topic ตรงกับโค้ด Arduino' : 'รอสักครู่นะ';
+      $('bell-dot').style.display = 'none';
+      return;
+    }
+
+    const s = data;
+    const m = Math.max(0, Math.min(100, Number(s.moisture) || 0));
+    const mood = moodFor(m), md = moods[mood];
+    const watering = s.state === 'pumping';
+
+    // moisture card
+    $('moisture-value').textContent = m;
+    $('moisture-meter').style.width = m + '%';
+    $('moisture-meter').style.background = m < 30 ? '#cea476' : '#9eb582';
+    $('moisture-description').textContent = m < 15 ? 'แห้งมาก ควรดูแล' : m < 30 ? 'ดินเริ่มแห้ง' : m < 55 ? 'ความชื้นพอเหมาะ' : m > 80 ? 'ความชื้นสูง' : 'ชุ่มชื้นกำลังดี';
+
+    // pumps card
+    const used = Number(s.pumps) || 0;
+    $('pumps-value').textContent = used;
+    $('pumps-max').textContent = '/ ' + MAX_PUMPS;
+    const dots = $('pump-dots'); dots.replaceChildren();
+    for (let i = 0; i < MAX_PUMPS; i++) { const d = document.createElement('i'); if (i < used) d.className = 'used'; dots.append(d); }
+    $('pumps-description').textContent = used >= MAX_PUMPS ? 'ครบโควตาแล้ว รอชั่วโมงถัดไป' : 'จำกัดเพื่อความปลอดภัย';
+
+    // plant
+    $('mood').textContent = md[0];
+    $('speech').textContent = !live ? 'ไม่ได้ยินเสียงบอร์ดเลย…' : watering ? 'กำลังดื่มน้ำ… ชื่นใจจัง ♡' : s.state === 'soaking' ? 'อึก อึก… รอให้น้ำซึมก่อนนะ' : md[1];
+    $('mood-note').textContent = md[2];
+    $('scene').className = 'scene ' + mood;
+    $('face').innerHTML = `<path d="${md[3]}"/>`;
+    $('plant-svg').setAttribute('aria-label', 'น้องต้นไม้ ' + md[0]);
+
+    // watering card
+    $('water-button').disabled = !live || s.state !== 'idle';
+    $('water-button').textContent = watering ? 'กำลังให้น้ำ…' : s.state === 'soaking' ? 'รอดินซึมน้ำ…' : '♧  ให้น้ำเลย';
+    $('auto-toggle').disabled = !live;
+    $('auto-toggle').setAttribute('aria-checked', String(!!s.auto));
+    $('water-status').textContent =
+      !live ? 'บอร์ดออฟไลน์ · สั่งให้น้ำไม่ได้' :
+      s.state === 'pumping' ? 'ปั๊มกำลังทำงาน · รอสักครู่' :
+      s.state === 'soaking' ? 'พักให้ดินซึมน้ำ · ใกล้พร้อมแล้ว' :
+      s.state === 'locked' ? 'ให้น้ำครบโควตา · เช็กน้ำในถังด้วยนะ' :
+      s.auto ? 'เปิดดูแลอัตโนมัติ · พร้อมทำงาน' : 'พร้อมให้น้ำ';
+
+    // notification
+    const alert = !live || m < 30 || s.state === 'locked';
+    $('notification').className = 'notification' + (alert ? ' alert' : '');
+    $('notification-title').textContent =
+      !live ? 'ขาดการเชื่อมต่อกับบอร์ด' :
+      s.state === 'locked' ? 'ให้น้ำหลายครั้งแล้วดินยังแห้ง' :
+      m < 15 ? 'น้องดินแห้งมากแล้ว' : m < 30 ? 'น้องเริ่มกระหายน้ำ' : 'ทุกอย่างกำลังไปได้ดี';
+    $('notification-text').textContent =
+      !live ? 'ค่าที่แสดงเป็นค่าล่าสุดที่ได้รับ ไม่ใช่ข้อมูลสด' :
+      s.state === 'locked' ? 'น้ำในถังอาจหมด หรือสายยางหลุด ลองเช็กดูนะ' :
+      m < 30 ? 'ความชื้นต่ำกว่า 30% ลองกดให้น้ำเพื่อดูแลน้อง' : 'น้องได้รับการดูแลอย่างดีแล้ววันนี้';
+    $('bell-dot').style.display = alert ? 'block' : 'none';
+
+    // timestamps
+    $('updated').textContent = live ? 'อัปเดต ' + new Date(lastAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'ข้อมูลล่าสุด · ออฟไลน์';
+    $('c-state').textContent = stateText[s.state] || s.state;
+    $('c-raw').textContent = s.raw;
+  }
+
+  // ---------- MQTT ----------
+  const client = mqtt.connect(BROKER_URL, {
+    clientId: 'baby-tree-web-' + Math.random().toString(16).slice(2, 10),
+    reconnectPeriod: 3000,
+  });
+
+  function subscribeAll() {
+    const t = topics();
+    client.subscribe([t.status, t.online], err => {
+      if (err) log('Subscribe error: ' + err.message);
+      else log('Subscribed: ' + prefix + '/status, /online');
+    });
+  }
+
+  function send(cmd) {
+    if (!client.connected) return;
+    client.publish(topics().cmd, cmd);
+    log('Sent: ' + cmd);
+  }
+
+  client.on('connect', () => { log('Connected to broker'); subscribeAll(); send('status'); render(); });
+  client.on('reconnect', () => render());
+  client.on('close', () => render());
+  client.on('error', err => log('Error: ' + err.message));
+
+  client.on('message', (topic, payload) => {
+    const text = payload.toString(), t = topics();
+
+    if (topic === t.online) {
+      boardOnline = text === '1';
+      log('Board ' + (boardOnline ? 'online' : 'offline'));
+      render();
+      return;
+    }
+
+    if (topic === t.status) {
+      let d;
+      try { d = JSON.parse(text); } catch { log('Bad JSON: ' + text); return; }
+      data = d;
+      lastAt = Date.now();
+      if (boardOnline === null) boardOnline = true;
+
+      // history: count a watering only when the board confirms the pump finished
+      if (prevState === 'pumping' && d.state === 'soaking') addHistory(d.auto ? '♧ ให้น้ำอัตโนมัติเรียบร้อย' : '♧ ให้น้ำเรียบร้อย');
+      if (prevState && prevState !== 'locked' && d.state === 'locked') addHistory('⚠ ให้น้ำครบโควตา ดินยังแห้ง');
+      if (d.state !== prevState) log('State: ' + d.state);
+      prevState = d.state;
+
+      render();
+    }
+  });
+
+  // ---------- Controls ----------
+  $('water-button').onclick = () => send('pump');
+  $('auto-toggle').onclick = () => { if (data) send(data.auto ? 'auto:off' : 'auto:on'); };
+  $('refresh').onclick = () => send('status');
+  $('bell').onclick = () => $('notification').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  $('topic').value = prefix;
+  $('apply-topic').onclick = () => {
+    const next = $('topic').value.trim();
+    if (!next || next === prefix) return;
+    const old = topics();
+    if (client.connected) client.unsubscribe([old.status, old.online]);
+    prefix = next; save('baby-tree-prefix', prefix);
+    data = null; boardOnline = null; prevState = '';
+    log('Topic prefix: ' + prefix);
+    if (client.connected) { subscribeAll(); send('status'); }
+    render();
+  };
+
+  // ---------- Planted date (friend's logic) ----------
+  function updateAge(value) {
+    const start = Date.parse(value + 'T00:00:00Z'), now = Date.parse(today() + 'T00:00:00Z');
+    if (!Number.isFinite(start) || start > now) { $('planted').setCustomValidity('กรุณาเลือกวันเริ่มปลูกที่ไม่เกินวันนี้'); $('planted').reportValidity(); return false; }
+    $('planted').setCustomValidity('');
+    $('age').textContent = Math.floor((now - start) / 86400000);
+    return true;
+  }
+  $('planted').max = today();
+  let date = read('baby-tree-planted', today());
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today()) date = today();
+  $('planted').value = date; updateAge(date);
+  $('planted').onchange = e => { if (updateAge(e.target.value)) save('baby-tree-planted', e.target.value); };
+
+  renderHistory();
+  render();
+  setInterval(render, 1000);   // keeps "x seconds ago" and offline detection fresh
+})();
+</script>
+</body>
+</html>
